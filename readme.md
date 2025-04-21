@@ -20,6 +20,9 @@ The tasks are as follows:
 
 **Regarding the questions listed in each task, we encourage you to write it down in a report. This will help you better clarify your thoughts and present your findings, which is more important than writing code during your PhD study.**
 
+## Preparation
+This project is based on LevelDB. Please refer to [its readme](./README_origin.md) to build it.
+
 ## Task 1: Use the LevelDB to implement basic operations
 As a key-value store, LSM-tree supports mainly five operations, insert, delete, update, point lookup, and range lookup. In this task, you are going to use LevelDB to implement the following functions:
 
