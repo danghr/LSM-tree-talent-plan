@@ -1,0 +1,8 @@
+# Ignore object files
+*.o
+
+# Ignore task1 executable
+task1
+
+# Ignore db directory
+db/
