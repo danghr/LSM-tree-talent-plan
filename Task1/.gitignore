@@ -6,3 +6,6 @@ task1
 
 # Ignore db directory
 db/
+
+# Ignore log files
+*.log

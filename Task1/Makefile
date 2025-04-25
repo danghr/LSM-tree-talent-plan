@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -g -Wall -Wextra -std=c++11
+CXXFLAGS = -g -Wall -Wextra -std=c++17
 
 # Target executable
 TARGET = task1
