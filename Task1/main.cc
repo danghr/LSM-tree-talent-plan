@@ -15,7 +15,7 @@ using namespace std;
 #define INSERT_KEY_COUNT 10000000
 #define TEST_KEY_COUNT (INSERT_KEY_COUNT / 10)
 
-#define LOG_FILE_NAME "timing.log"
+#define LOG_FILE_NAME "timing"
 
 class BenchTime {
  private:
@@ -45,6 +45,13 @@ class BenchTime {
     ss << "Total operations: " << op_times.size() << endl;
     ss << "Timing (us): avg=" << avg << ", median=" << median << ", min=" << min
        << ", max=" << max << ", p99=" << p99;
+    return ss;
+  }
+  stringstream print_all() {
+    stringstream ss;
+    for (double time : op_times) {
+      ss << time << endl;
+    }
     return ss;
   }
 } bench_time;
@@ -108,21 +115,30 @@ int main() {
     }
 
     if ((i + 1) % 1000 == 0) {
-      cout << "Inserted " << (i + 1) << " keys and values (" << fixed
+      cout << "[Stage 1] Inserted " << (i + 1) << " keys and values (" << fixed
            << setprecision(2)
            << (((double)(i + 1) / (double)INSERT_KEY_COUNT) * 100) << "%)"
            << endl;
     }
   }
 
+  char stage_1_file_name[100] = LOG_FILE_NAME;
+  strcat(stage_1_file_name, "-stage_1.log");
+  ofstream stage_1_file;
+  stage_1_file.open(stage_1_file_name, ios::out);
+  stage_1_file << bench_time.print_all().str();
+  stage_1_file.close();
+
   stringstream statistics = bench_time.statistics();
   cout << "[Stage 1] Insert " << INSERT_KEY_COUNT << " keys" << endl
        << statistics.str() << endl;
   // Write the same statistics to a file
+  char timing_file_name[100] = LOG_FILE_NAME;
+  strcat(timing_file_name, ".log");
   ofstream timing_file;
-  timing_file.open(LOG_FILE_NAME, ios::out);
+  timing_file.open(timing_file_name, ios::out);
   timing_file << "[Stage 1] Insert " << INSERT_KEY_COUNT << " keys" << endl
-              << statistics.str() << endl;
+              << statistics.str() << endl << endl;
 
   // ---------------------------------
   // 2. Point lookup TEST_KEY_COUNT random keys and values
@@ -160,16 +176,25 @@ int main() {
       return 1;
     }
     if ((i + 1) % 1000 == 0) {
-      cout << "Retrieved " << (i + 1) << " keys (" << fixed << setprecision(2)
+      cout << "[Stage 2] Point lookup " << (i + 1) << " keys (" << fixed
+           << setprecision(2)
            << (((double)(i + 1) / (double)TEST_KEY_COUNT) * 100) << "%)"
            << endl;
     }
   }
+
+  char stage_2_file_name[100] = LOG_FILE_NAME;
+  strcat(stage_2_file_name, "-stage_2.log");
+  ofstream stage_2_file;
+  stage_2_file.open(stage_2_file_name, ios::out);
+  stage_2_file << bench_time.print_all().str();
+  stage_2_file.close();
+
   statistics = bench_time.statistics();
   cout << "[Stage 2] Point lookup " << TEST_KEY_COUNT << " keys" << endl
        << statistics.str() << endl;
   timing_file << "[Stage 2] Point lookup " << TEST_KEY_COUNT << " keys" << endl
-              << statistics.str() << endl;
+              << statistics.str() << endl << endl;
 
   // ---------------------------------
   // 3. Sequentially delete TEST_KEY_COUNT keys
@@ -198,17 +223,25 @@ int main() {
     // Remove the key from the hash table
     key_value_map.erase(key);
     if ((i + 1) % 1000 == 0) {
-      cout << "Deleted " << (i + 1) << " keys (" << fixed << setprecision(2)
+      cout << "[Stage 3] Deleted " << (i + 1) << " keys (" << fixed
+           << setprecision(2)
            << (((double)(i + 1) / (double)TEST_KEY_COUNT) * 100) << "%)"
            << endl;
     }
   }
 
+  char stage_3_file_name[100] = LOG_FILE_NAME;
+  strcat(stage_3_file_name, "-stage_3.log");
+  ofstream stage_3_file;
+  stage_3_file.open(stage_3_file_name, ios::out);
+  stage_3_file << bench_time.print_all().str();
+  stage_3_file.close();
+
   statistics = bench_time.statistics();
   cout << "[Stage 3] Sequentially delete " << TEST_KEY_COUNT << " keys" << endl
        << statistics.str() << endl;
-  timing_file << "[Stage 3] Sequentially delete " << TEST_KEY_COUNT << " keys" << endl
-              << statistics.str() << endl;
+  timing_file << "[Stage 3] Sequentially delete " << TEST_KEY_COUNT << " keys"
+              << endl << statistics.str() << endl << endl;
     
   // ---------------------------------
   // 4. Sequentially update TEST_KEY_COUNT keys
@@ -244,17 +277,25 @@ int main() {
     key_value_map[key] = new_value;
 
     if ((i + 1) % 1000 == 0) {
-      cout << "Updated " << (i + 1) << " keys (" << fixed << setprecision(2)
+      cout << "[Stage 4] Updated " << (i + 1) << " keys (" << fixed
+           << setprecision(2)
            << (((double)(i + 1) / (double)TEST_KEY_COUNT) * 100) << "%)"
            << endl;
     }
   }
 
+  char stage_4_file_name[100] = LOG_FILE_NAME;
+  strcat(stage_4_file_name, "-stage_4.log");
+  ofstream stage_4_file;
+  stage_4_file.open(stage_4_file_name, ios::out);
+  stage_4_file << bench_time.print_all().str();
+  stage_4_file.close();
+
   statistics = bench_time.statistics();
   cout << "[Stage 4] Sequentially update " << TEST_KEY_COUNT << " keys" << endl
        << statistics.str() << endl;
-  timing_file << "[Stage 4] Sequentially update " << TEST_KEY_COUNT << " keys" << endl
-              << statistics.str() << endl;  
+  timing_file << "[Stage 4] Sequentially update " << TEST_KEY_COUNT << " keys"
+              << endl << statistics.str() << endl << endl;  
   
   // ---------------------------------
   // 5. Range lookup TEST_KEY_COUNT keys
@@ -296,17 +337,25 @@ int main() {
     }
 
     if ((i + 1) % 1000 == 0) {
-      cout << "Updated " << (i + 1) << " keys (" << fixed << setprecision(2)
+      cout << "[Stage 5] Range looked up " << (i + 1) << " keys (" << fixed
+           << setprecision(2)
            << (((double)(i + 1) / (double)TEST_KEY_COUNT) * 100) << "%)"
            << endl;
     }
   }
 
+  char stage_5_file_name[100] = LOG_FILE_NAME;
+  strcat(stage_5_file_name, "-stage_5.log");
+  ofstream stage_5_file;
+  stage_5_file.open(stage_5_file_name, ios::out);
+  stage_5_file << bench_time.print_all().str();
+  stage_5_file.close();
+
   statistics = bench_time.statistics();
   cout << "[Stage 5] Range lookup " << TEST_KEY_COUNT << " keys" << endl
        << statistics.str() << endl;
   timing_file << "[Stage 5] Range lookup " << TEST_KEY_COUNT << " keys" << endl
-              << statistics.str() << endl;
+              << statistics.str() << endl << endl;
 
   // Clean up
   delete db;  // Close the database

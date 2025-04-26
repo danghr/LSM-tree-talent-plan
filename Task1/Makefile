@@ -33,7 +33,7 @@ $(TARGET): $(OBJS)
 
 # Clean target
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(OBJS) *.log
 
 # Phony targets
 .PHONY: all clean
