@@ -72,7 +72,8 @@
 			"chrono": "cpp",
 			"random": "cpp",
 			"fstream": "cpp",
-			"sstream": "cpp"
+			"sstream": "cpp",
+			"any": "cpp"
 		}
 	}
 }

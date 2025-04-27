@@ -1,5 +1,5 @@
-#ifndef KEY_VALUE_H_
-#define KEY_VALUE_H_
+#ifndef TASK1_KEY_VALUE_H_
+#define TASK1_KEY_VALUE_H_
 
 #include <string>
 
@@ -10,4 +10,4 @@ typedef std::pair<std::string, std::string> KV_Pair;
 
 KV_Pair generateRandomPair();
 
-#endif // KEY_VALUE_H_
+#endif // TASK1_KEY_VALUE_H_

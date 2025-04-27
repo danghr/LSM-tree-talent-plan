@@ -3,6 +3,11 @@
 
 # Ignore task1 executable
 task1
+task2
+task3
+task1_build
+task2_build
+task3_build
 
 # Ignore db directory
 db/
