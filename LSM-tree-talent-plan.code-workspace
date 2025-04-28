@@ -13,6 +13,9 @@
 			"${workspaceFolder}/include/*",
 			"${workspaceFolder}/*",
 		],
+		"C_Cpp.default.defines": [
+			"LEVELDB_PLATFORM_POSIX"
+		],
 		"C_Cpp.default.cppStandard": "c++17",
 		"files.associations": {
 			"iostream": "cpp",
