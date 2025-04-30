@@ -4,7 +4,12 @@
 
 void BenchTime::add(double time) { op_times.emplace_back(time); }
 
-void BenchTime::clear() { op_times.clear(); }
+void BenchTime::clear() {
+  op_times.clear();
+  db_stats.clear();
+}
+
+void BenchTime::add_db_stats(std::string stats) { db_stats = stats; }
 
 std::string BenchTime::statistics() {
   if (op_times.empty()) {
@@ -25,7 +30,9 @@ std::string BenchTime::statistics() {
   ss << std::fixed << std::setprecision(3);
   ss << "Total operations: " << op_times_copy.size() << std::endl;
   ss << "Timing (us): avg=" << avg << ", median=" << median << ", min=" << min
-     << ", max=" << max << ", p99=" << p99;
+     << ", max=" << max << ", p99=" << p99 << std::endl
+     << "DB stats: " << std::endl
+     << db_stats << std::endl;
   return ss.str();
 }
 
