@@ -475,27 +475,28 @@ bool Version::OverlapInLevel(int level, const Slice* smallest_user_key,
 int Version::PickLevelForMemTableOutput(const Slice& smallest_user_key,
                                         const Slice& largest_user_key) {
   int level = 0;
-  if (!OverlapInLevel(0, &smallest_user_key, &largest_user_key)) {
-    // Push to next level if there is no overlap in next level,
-    // and the #bytes overlapping in the level after that are limited.
-    InternalKey start(smallest_user_key, kMaxSequenceNumber, kValueTypeForSeek);
-    InternalKey limit(largest_user_key, 0, static_cast<ValueType>(0));
-    std::vector<FileMetaData*> overlaps;
-    while (level < config::kMaxMemCompactLevel) {
-      if (OverlapInLevel(level + 1, &smallest_user_key, &largest_user_key)) {
-        break;
-      }
-      if (level + 2 < config::kNumLevels) {
-        // Check that file does not overlap too many grandparent bytes.
-        GetOverlappingInputs(level + 2, &start, &limit, &overlaps);
-        const int64_t sum = TotalFileSize(overlaps);
-        if (sum > MaxGrandParentOverlapBytes(vset_->options_)) {
-          break;
-        }
-      }
-      level++;
-    }
-  }
+  // Disable for now
+  // if (!OverlapInLevel(0, &smallest_user_key, &largest_user_key)) {
+  //   // Push to next level if there is no overlap in next level,
+  //   // and the #bytes overlapping in the level after that are limited.
+  //   InternalKey start(smallest_user_key, kMaxSequenceNumber, kValueTypeForSeek);
+  //   InternalKey limit(largest_user_key, 0, static_cast<ValueType>(0));
+  //   std::vector<FileMetaData*> overlaps;
+  //   while (level < config::kMaxMemCompactLevel) {
+  //     if (OverlapInLevel(level + 1, &smallest_user_key, &largest_user_key)) {
+  //       break;
+  //     }
+  //     if (level + 2 < config::kNumLevels) {
+  //       // Check that file does not overlap too many grandparent bytes.
+  //       GetOverlappingInputs(level + 2, &start, &limit, &overlaps);
+  //       const int64_t sum = TotalFileSize(overlaps);
+  //       if (sum > MaxGrandParentOverlapBytes(vset_->options_)) {
+  //         break;
+  //       }
+  //     }
+  //     level++;
+  //   }
+  // }
   return level;
 }
 
@@ -1040,26 +1041,34 @@ void VersionSet::Finalize(Version* v) {
 
   for (int level = 0; level < config::kNumLevels - 1; level++) {
     double score;
-    if (level == 0) {
-      // We treat level-0 specially by bounding the number of files
-      // instead of number of bytes for two reasons:
-      //
-      // (1) With larger write-buffer sizes, it is nice not to do too
-      // many level-0 compactions.
-      //
-      // (2) The files in level-0 are merged on every read and
-      // therefore we wish to avoid too many files when the individual
-      // file size is small (perhaps because of a small write-buffer
-      // setting, or very high compression ratios, or lots of
-      // overwrites/deletions).
-      score = v->files_[level].size() /
-              static_cast<double>(config::kL0_CompactionTrigger);
-    } else {
-      // Compute the ratio of current size to size limit.
-      const uint64_t level_bytes = TotalFileSize(v->files_[level]);
-      score =
-          static_cast<double>(level_bytes) / MaxBytesForLevel(options_, level);
-    }
+    // if (level == 0) {
+    //   // We treat level-0 specially by bounding the number of files
+    //   // instead of number of bytes for two reasons:
+    //   //
+    //   // (1) With larger write-buffer sizes, it is nice not to do too
+    //   // many level-0 compactions.
+    //   //
+    //   // (2) The files in level-0 are merged on every read and
+    //   // therefore we wish to avoid too many files when the individual
+    //   // file size is small (perhaps because of a small write-buffer
+    //   // setting, or very high compression ratios, or lots of
+    //   // overwrites/deletions).
+    //   score = v->files_[level].size() /
+    //           static_cast<double>(config::kL0_CompactionTrigger);
+    // } else {
+    //   // Compute the ratio of current size to size limit.
+    //   const uint64_t level_bytes = TotalFileSize(v->files_[level]);
+    //   score =
+    //       static_cast<double>(level_bytes) / MaxBytesForLevel(options_, level);
+    // }
+
+    // We compare file size and number of sorted runs
+    const uint64_t level_bytes = TotalFileSize(v->files_[level]);
+    const uint64_t level_count = v->files_[level].size();
+    score = std::max(
+      static_cast<double>(level_bytes) / MaxBytesForLevel(options_, level),
+      static_cast<double>(level_count) / MaxSortedRunsForLevel(options_, level)
+    );
 
     if (score > best_score) {
       best_level = level;
@@ -1261,26 +1270,30 @@ Compaction* VersionSet::PickCompaction() {
   // We prefer compactions triggered by too much data in a level over
   // the compactions triggered by seeks.
   const bool size_compaction = (current_->compaction_score_ >= 1);
-  const bool seek_compaction = (current_->file_to_compact_ != nullptr);
+  // We disable seek compaction for now
+  const bool seek_compaction = false;
   if (size_compaction) {
     level = current_->compaction_level_;
     assert(level >= 0);
     assert(level + 1 < config::kNumLevels);
     c = new Compaction(options_, level);
 
-    // Pick the first file that comes after compact_pointer_[level]
-    for (size_t i = 0; i < current_->files_[level].size(); i++) {
-      FileMetaData* f = current_->files_[level][i];
-      if (compact_pointer_[level].empty() ||
-          icmp_.Compare(f->largest.Encode(), compact_pointer_[level]) > 0) {
-        c->inputs_[0].push_back(f);
-        break;
-      }
-    }
-    if (c->inputs_[0].empty()) {
-      // Wrap-around to the beginning of the key space
-      c->inputs_[0].push_back(current_->files_[level][0]);
-    }
+    // // Pick the first file that comes after compact_pointer_[level]
+    // for (size_t i = 0; i < current_->files_[level].size(); i++) {
+    //   FileMetaData* f = current_->files_[level][i];
+    //   if (compact_pointer_[level].empty() ||
+    //       icmp_.Compare(f->largest.Encode(), compact_pointer_[level]) > 0) {
+    //     c->inputs_[0].push_back(f);
+    //     break;
+    //   }
+    // }
+    // if (c->inputs_[0].empty()) {
+    //   // Wrap-around to the beginning of the key space
+    //   c->inputs_[0].push_back(current_->files_[level][0]);
+    // }
+
+    // Pick all files in the level
+    c->inputs_[0] = current_->files_[level];
   } else if (seek_compaction) {
     level = current_->file_to_compact_level_;
     c = new Compaction(options_, level);
@@ -1293,17 +1306,18 @@ Compaction* VersionSet::PickCompaction() {
   c->input_version_->Ref();
 
   // Files in level 0 may overlap each other, so pick up all overlapping ones
-  if (level == 0) {
-    InternalKey smallest, largest;
-    GetRange(c->inputs_[0], &smallest, &largest);
-    // Note that the next call will discard the file we placed in
-    // c->inputs_[0] earlier and replace it with an overlapping set
-    // which will include the picked file.
-    current_->GetOverlappingInputs(0, &smallest, &largest, &c->inputs_[0]);
-    assert(!c->inputs_[0].empty());
-  }
+  // if (level == 0) {
+  //   InternalKey smallest, largest;
+  //   GetRange(c->inputs_[0], &smallest, &largest);
+  //   // Note that the next call will discard the file we placed in
+  //   // c->inputs_[0] earlier and replace it with an overlapping set
+  //   // which will include the picked file.
+  //   current_->GetOverlappingInputs(0, &smallest, &largest, &c->inputs_[0]);
+  //   assert(!c->inputs_[0].empty());
+  // }
 
-  SetupOtherInputs(c);
+  // No need to do this since we already added all files in a level
+  // SetupOtherInputs(c);
 
   return c;
 }

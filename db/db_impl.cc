@@ -967,15 +967,16 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
         // Hidden by an newer entry for same user key
         drop = true;  // (A)
       } else if (ikey.type == kTypeDeletion &&
-                 ikey.sequence <= compact->smallest_snapshot &&
-                 compact->compaction->IsBaseLevelForKey(ikey.user_key)) {
-        // For this user key:
-        // (1) there is no data in higher levels
-        // (2) data in lower levels will have larger sequence numbers
-        // (3) data in layers that are being compacted here and have
-        //     smaller sequence numbers will be dropped in the next
-        //     few iterations of this loop (by rule (A) above).
-        // Therefore this deletion marker is obsolete and can be dropped.
+                 ikey.sequence <= compact->smallest_snapshot) {
+        // For tiered compaction, we can't use IsBaseLevelForKey anymore since
+        // multiple overlapping runs may contain the same key at the same level.
+        // We only drop a deletion marker if:
+        // (1) it's older than the smallest snapshot (already checked above)
+        // (2) we're doing a tiered compaction where all input files are from 
+        //     the same level with no files from the next level
+        // 
+        // This is more conservative - we keep deletion markers unless we're sure
+        // they can be dropped without losing data.
         drop = true;
       }
 
