@@ -12,10 +12,10 @@
 
 using namespace std;
 
-#define INSERT_KEY_COUNT 10000
+#define INSERT_KEY_COUNT 1000000
 #define TEST_KEY_COUNT (INSERT_KEY_COUNT / 10)
 
-#define LOG_FILE_NAME "timing"
+#define LOG_FILE_NAME "task2-timing"
 
 BenchTime bench_time;
 
@@ -73,22 +73,45 @@ int main() {
               << endl;
 
   // ---------------------------------
-  // 2. Randomly read TEST_KEY_COUNT keys
+  // 2. Point lookup TEST_KEY_COUNT random keys and values
   // ---------------------------------
+  cout << "[Stage 2] Point lookup " << TEST_KEY_COUNT << " keys..." << endl;
 
-  cout << "[Stage 2] Randomly reading " << TEST_KEY_COUNT << " keys..."
-       << endl;
   bench_time = readrandom(db, read_options, key_value_map, TEST_KEY_COUNT);
+
   char stage_2_file_name[100] = LOG_FILE_NAME;
   strcat(stage_2_file_name, "-stage_2.log");
   ofstream stage_2_file;
   stage_2_file.open(stage_2_file_name, ios::out);
   stage_2_file << bench_time.print_all();
   stage_2_file.close();
+
   statistics = bench_time.statistics();
-  cout << "[Stage 2] Randomly read " << TEST_KEY_COUNT << " keys" << endl
+  cout << "[Stage 2] Point lookup " << TEST_KEY_COUNT << " keys" << endl
        << statistics << endl;
-  timing_file << "[Stage 2] Randomly read " << TEST_KEY_COUNT << " keys"
+  timing_file << "[Stage 2] Point lookup " << TEST_KEY_COUNT << " keys" << endl
+              << statistics << endl
+              << endl;
+
+  // ---------------------------------
+  // 3. Sequentially delete TEST_KEY_COUNT keys
+  // ---------------------------------
+  cout << "[Stage 3] Sequentially deleting " << TEST_KEY_COUNT << " keys..."
+       << endl;
+
+  bench_time = delrandom(db, write_options, key_value_map, TEST_KEY_COUNT);
+
+  char stage_3_file_name[100] = LOG_FILE_NAME;
+  strcat(stage_3_file_name, "-stage_3.log");
+  ofstream stage_3_file;
+  stage_3_file.open(stage_3_file_name, ios::out);
+  stage_3_file << bench_time.print_all();
+  stage_3_file.close();
+
+  statistics = bench_time.statistics();
+  cout << "[Stage 3] Sequentially delete " << TEST_KEY_COUNT << " keys" << endl
+       << statistics << endl;
+  timing_file << "[Stage 3] Sequentially delete " << TEST_KEY_COUNT << " keys"
               << endl
               << statistics << endl
               << endl;
