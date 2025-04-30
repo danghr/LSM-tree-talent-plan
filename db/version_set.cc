@@ -287,8 +287,7 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
                                  bool (*func)(void*, int, FileMetaData*)) {
   const Comparator* ucmp = vset_->icmp_.user_comparator();
 
-  // Search level-0 in order from newest to oldest.
-  // Treat all levels the same as level 0 by scanning all files
+  // Search all files
   for (int level = 0; level < config::kNumLevels; level++) {
     if (files_[level].empty()) continue;
     printf("Searching level %d\n", level);
@@ -305,7 +304,7 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
       std::sort(tmp.begin(), tmp.end(), NewestFirst);
       for (uint32_t i = 0; i < tmp.size(); i++) {
         printf("Checking file %llu\n", tmp[i]->number);
-        if (!(*func)(arg, 0, tmp[i])) {
+        if (!(*func)(arg, level, tmp[i])) {
           printf("Found in level %d\n", level);
           return;
         }
