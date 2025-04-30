@@ -22,7 +22,7 @@ BenchTime delrandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
                     int count);
 
 BenchTime updaterandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
-    leveldb::ReadOptions& read_options,
+                       leveldb::ReadOptions& read_options,
                        std::map<std::string, std::string>& key_value_map,
                        int count);
 
