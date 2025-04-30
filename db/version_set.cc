@@ -288,42 +288,49 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
   const Comparator* ucmp = vset_->icmp_.user_comparator();
 
   // Search level-0 in order from newest to oldest.
-  std::vector<FileMetaData*> tmp;
-  tmp.reserve(files_[0].size());
-  for (uint32_t i = 0; i < files_[0].size(); i++) {
-    FileMetaData* f = files_[0][i];
-    if (ucmp->Compare(user_key, f->smallest.user_key()) >= 0 &&
-        ucmp->Compare(user_key, f->largest.user_key()) <= 0) {
-      tmp.push_back(f);
-    }
-  }
-  if (!tmp.empty()) {
-    std::sort(tmp.begin(), tmp.end(), NewestFirst);
-    for (uint32_t i = 0; i < tmp.size(); i++) {
-      if (!(*func)(arg, 0, tmp[i])) {
-        return;
+  // Treat all levels the same as level 0 by scanning all files
+  for (int level = 0; level < config::kNumLevels; level++) {
+    if (files_[level].empty()) continue;
+    printf("Searching level %d\n", level);
+    std::vector<FileMetaData*> tmp;
+    tmp.reserve(files_[level].size());
+    for (uint32_t i = 0; i < files_[level].size(); i++) {
+      FileMetaData* f = files_[level][i];
+      if (ucmp->Compare(user_key, f->smallest.user_key()) >= 0 &&
+          ucmp->Compare(user_key, f->largest.user_key()) <= 0) {
+        tmp.push_back(f);
       }
     }
-  }
-
-  // Search other levels.
-  for (int level = 1; level < config::kNumLevels; level++) {
-    size_t num_files = files_[level].size();
-    if (num_files == 0) continue;
-
-    // Binary search to find earliest index whose largest key >= internal_key.
-    uint32_t index = FindFile(vset_->icmp_, files_[level], internal_key);
-    if (index < num_files) {
-      FileMetaData* f = files_[level][index];
-      if (ucmp->Compare(user_key, f->smallest.user_key()) < 0) {
-        // All of "f" is past any data for user_key
-      } else {
-        if (!(*func)(arg, level, f)) {
+    if (!tmp.empty()) {
+      std::sort(tmp.begin(), tmp.end(), NewestFirst);
+      for (uint32_t i = 0; i < tmp.size(); i++) {
+        printf("Checking file %llu\n", tmp[i]->number);
+        if (!(*func)(arg, 0, tmp[i])) {
+          printf("Found in level %d\n", level);
           return;
         }
       }
     }
   }
+
+  // // Search other levels.
+  // for (int level = 1; level < config::kNumLevels; level++) {
+  //   size_t num_files = files_[level].size();
+  //   if (num_files == 0) continue;
+
+  //   // Binary search to find earliest index whose largest key >= internal_key.
+  //   uint32_t index = FindFile(vset_->icmp_, files_[level], internal_key);
+  //   if (index < num_files) {
+  //     FileMetaData* f = files_[level][index];
+  //     if (ucmp->Compare(user_key, f->smallest.user_key()) < 0) {
+  //       // All of "f" is past any data for user_key
+  //     } else {
+  //       if (!(*func)(arg, level, f)) {
+  //         return;
+  //       }
+  //     }
+  //   }
+  // }
 }
 
 Status Version::Get(const ReadOptions& options, const LookupKey& k,
