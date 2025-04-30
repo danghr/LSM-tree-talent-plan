@@ -10,6 +10,13 @@
 
 using namespace std;
 
+static void add_db_stats(leveldb::DB* db, BenchTime& bench_time) {
+  leveldb::Options options;
+  string stats;
+  db->GetProperty("leveldb.stats", &stats);
+  bench_time.add_db_stats(stats);
+}
+
 BenchTime fillrandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
                      map<string, string>& key_value_map, int count) {
   BenchTime bench_time;
@@ -48,6 +55,7 @@ BenchTime fillrandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
            << "%)" << endl;
     }
   }
+  add_db_stats(db, bench_time);
   return bench_time;
 }
 
@@ -89,7 +97,7 @@ BenchTime readrandom(leveldb::DB* db, leveldb::ReadOptions& read_options,
            << "%)" << endl;
     }
   }
-
+  add_db_stats(db, bench_time);
   return bench_time;
 }
 
@@ -117,15 +125,16 @@ BenchTime delrandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
     // Remove the key from the hash table
     key_value_map.erase(key);
     if ((i + 1) % 1000 == 0) {
-      cout << "[Stage 3] Deleted " << (i + 1) << " keys (" << fixed
-           << setprecision(2) << (((double)(i + 1) / (double)count) * 100)
-           << "%)" << endl;
+      cout << "Deleted " << (i + 1) << " keys (" << fixed << setprecision(2)
+           << (((double)(i + 1) / (double)count) * 100) << "%)" << endl;
     }
   }
+  add_db_stats(db, bench_time);
   return bench_time;
 }
 
 BenchTime updaterandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
+                       leveldb::ReadOptions& read_options,
                        std::map<std::string, std::string>& key_value_map,
                        int count) {
   BenchTime bench_time;
@@ -139,6 +148,8 @@ BenchTime updaterandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
     // Generate a new random value
     KV_Pair kv = generateRandomPair();
     string new_value = kv.second;
+
+    updated_keys.emplace_back(key);
 
     // Measure time for this Put operation
     auto start = chrono::high_resolution_clock::now();
@@ -156,11 +167,34 @@ BenchTime updaterandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
     key_value_map[key] = new_value;
 
     if ((i + 1) % 1000 == 0) {
-      cout << "[Stage 4] Updated " << (i + 1) << " keys (" << fixed
-           << setprecision(2) << (((double)(i + 1) / (double)count) * 100)
-           << "%)" << endl;
+      cout << "Updated " << (i + 1) << " keys (" << fixed << setprecision(2)
+           << (((double)(i + 1) / (double)count) * 100) << "%)" << endl;
     }
   }
+  add_db_stats(db, bench_time);
+
+  // Check correctness of results
+  cout << "Checking correctness of updated keys..." << endl;
+  for (const auto& key : updated_keys) {
+    string value_str;
+    status = (db->Get(read_options, key, &value_str));
+    if (!status.ok()) {
+      cerr << "Error retrieving key-value pair from database." << endl;
+      cerr << status.ToString() << endl;
+      delete db;
+      exit(-1);
+    }
+    // Check if the retrieved value matches the updated value
+    if (value_str != key_value_map[key]) {
+      cerr << "Error: Retrieved value does not match updated value." << endl;
+      cerr << "Key: \"" << key << "\"" << endl;
+      cerr << "Updated Value: \"" << key_value_map[key] << "\"" << endl;
+      cerr << "Retrieved Value: \"" << value_str << "\"" << endl;
+      delete db;
+      exit(-1);
+    }
+  }
+  cout << "Correctness check completed." << endl;
   return bench_time;
 }
 
@@ -209,5 +243,6 @@ BenchTime rangequery(leveldb::DB* db, leveldb::ReadOptions& read_options,
            << "%)" << endl;
     }
   }
+  add_db_stats(db, bench_time);
   return bench_time;
 }
