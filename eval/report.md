@@ -19,3 +19,13 @@ Note that this `map` also stores the key-value pairs, which can be used to check
 ### 2.1 Ensure the existence of keys
 
 Select keys from the `map` to ensure its existance.
+
+# Task 2
+
+Set single file size to an unlimited number
+One SSTable => One Big sorted run
+Limit number of files
+
+Either select either no or all compaction result
+
+Get: query all sorted runs, latest first (file name or sequence key?)
