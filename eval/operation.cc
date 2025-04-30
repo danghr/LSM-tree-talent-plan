@@ -201,6 +201,7 @@ BenchTime rangequery(leveldb::DB* db, leveldb::ReadOptions& read_options,
         exit(-1);
       }
     }
+    delete dbit;
 
     if ((i + 1) % 1000 == 0) {
       cout << "[Stage 5] Range looked up " << (i + 1) << " keys (" << fixed
