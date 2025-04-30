@@ -290,7 +290,7 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
   // Search all files
   for (int level = 0; level < config::kNumLevels; level++) {
     if (files_[level].empty()) continue;
-    printf("Searching level %d\n", level);
+    // printf("Searching level %d\n", level);
     std::vector<FileMetaData*> tmp;
     tmp.reserve(files_[level].size());
     for (uint32_t i = 0; i < files_[level].size(); i++) {
@@ -303,9 +303,9 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
     if (!tmp.empty()) {
       std::sort(tmp.begin(), tmp.end(), NewestFirst);
       for (uint32_t i = 0; i < tmp.size(); i++) {
-        printf("Checking file %llu\n", tmp[i]->number);
+        // printf("Checking file %llu\n", tmp[i]->number);
         if (!(*func)(arg, level, tmp[i])) {
-          printf("Found in level %d\n", level);
+          // printf("Found in level %d\n", level);
           return;
         }
       }
