@@ -1241,29 +1241,22 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
   options.verify_checksums = options_->paranoid_checks;
   options.fill_cache = false;
 
-  // Level-0 files have to be merged together.  For other levels,
-  // we will make a concatenating iterator per level.
-  // TODO(opt): use concatenating iterator for level-0 if there is no overlap
-  const int space = (c->level() == 0 ? c->inputs_[0].size() + 1 : 2);
-  Iterator** list = new Iterator*[space];
+  // In tiered compaction, files from any level may overlap,
+  // so we need to create iterators for each individual file,
+  // similar to how we handle level 0 in traditional LevelDB
+  int total_files = c->inputs_[0].size() + c->inputs_[1].size();
+  Iterator** list = new Iterator*[total_files];
   int num = 0;
+  
   for (int which = 0; which < 2; which++) {
-    if (!c->inputs_[which].empty()) {
-      if (c->level() + which == 0) {
         const std::vector<FileMetaData*>& files = c->inputs_[which];
         for (size_t i = 0; i < files.size(); i++) {
           list[num++] = table_cache_->NewIterator(options, files[i]->number,
                                                   files[i]->file_size);
         }
-      } else {
-        // Create concatenating iterator for the files from this level
-        list[num++] = NewTwoLevelIterator(
-            new Version::LevelFileNumIterator(icmp_, &c->inputs_[which]),
-            &GetFileIterator, table_cache_, options);
       }
-    }
-  }
-  assert(num <= space);
+  
+  assert(num <= total_files);
   Iterator* result = NewMergingIterator(&icmp_, list, num);
   delete[] list;
   return result;
