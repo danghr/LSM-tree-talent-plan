@@ -116,10 +116,10 @@ struct LEVELDB_EXPORT Options {
   // initially populating a large database.
   size_t max_file_size = SIZE_T_MAX;
 
-  // Ratio between layers
-  int tiered_layer_ratio = 10;
+  // Ratio between levels
+  int tiered_level_ratio = 10;
 
-  // Allowed sorted runs in a layer
+  // Allowed sorted runs in a level
   int max_sorted_runs = 10;
 
   // Compress blocks using the specified compression algorithm.  This

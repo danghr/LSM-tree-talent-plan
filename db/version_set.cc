@@ -22,33 +22,38 @@
 namespace leveldb {
 
 static size_t TargetFileSize(const Options* options) {
-  return options->max_file_size;
+  return SIZE_T_MAX;
 }
 
 // Maximum bytes of overlaps in grandparent (i.e., level+2) before we
 // stop building a single file in a level->level+1 compaction.
 static int64_t MaxGrandParentOverlapBytes(const Options* options) {
-  return 10 * TargetFileSize(options);
+  return INT64_MAX;
 }
 
 // Maximum number of bytes in all compacted files.  We avoid expanding
 // the lower level file set of a compaction if it would make the
 // total compaction cover more than this many bytes.
 static int64_t ExpandedCompactionByteSizeLimit(const Options* options) {
-  return 25 * TargetFileSize(options);
+  return INT64_MAX;
 }
 
 static double MaxBytesForLevel(const Options* options, int level) {
   // Note: the result for level zero is not really used since we set
   // the level-0 compaction threshold based on number of files.
 
-  // Result for both level-0 and level-1
-  double result = 10. * 1048576.0;
-  while (level > 1) {
-    result *= 10;
+  // Result for level-0
+  double result = options->write_buffer_size;
+  while (level >= 0) {
+    result *= options->tiered_level_ratio;
     level--;
   }
   return result;
+}
+
+static int MaxSortedRunsForLevel(const Options* options, int level) {
+  // We could vary per level to reduce number of files?
+  return options->max_sorted_runs;
 }
 
 static uint64_t MaxFileSizeForLevel(const Options* options, int level) {
