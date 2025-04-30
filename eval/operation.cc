@@ -50,7 +50,7 @@ BenchTime fillrandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
     }
 
     if ((i + 1) % 1000 == 0) {
-      cout << "[Stage 1] Inserted " << (i + 1) << " keys and values (" << fixed
+      cout << "Inserted " << (i + 1) << " keys and values (" << fixed
            << setprecision(2) << (((double)(i + 1) / (double)count) * 100)
            << "%)" << endl;
     }
@@ -92,7 +92,7 @@ BenchTime readrandom(leveldb::DB* db, leveldb::ReadOptions& read_options,
       exit(1);
     }
     if ((i + 1) % 1000 == 0) {
-      cout << "[Stage 2] Point lookup " << (i + 1) << " keys (" << fixed
+      cout << "Point lookup " << (i + 1) << " keys (" << fixed
            << setprecision(2) << (((double)(i + 1) / (double)count) * 100)
            << "%)" << endl;
     }
@@ -139,6 +139,7 @@ BenchTime updaterandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
                        int count) {
   BenchTime bench_time;
   leveldb::Status status;
+  vector<string> updated_keys;
   for (int i = 0; i < count; i++) {
     // Randomly select a key from the hash table
     auto it = key_value_map.begin();
@@ -238,7 +239,7 @@ BenchTime rangequery(leveldb::DB* db, leveldb::ReadOptions& read_options,
     delete dbit;
 
     if ((i + 1) % 1000 == 0) {
-      cout << "[Stage 5] Range looked up " << (i + 1) << " keys (" << fixed
+      cout << "Range looked up " << (i + 1) << " keys (" << fixed
            << setprecision(2) << (((double)(i + 1) / (double)count) * 100)
            << "%)" << endl;
     }

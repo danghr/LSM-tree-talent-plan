@@ -12,10 +12,10 @@
 
 using namespace std;
 
-#define INSERT_KEY_COUNT 10000
+#define INSERT_KEY_COUNT 1000000
 #define TEST_KEY_COUNT (INSERT_KEY_COUNT / 10)
 
-#define LOG_FILE_NAME "timing"
+#define LOG_FILE_NAME "task1-timing"
 
 BenchTime bench_time;
 
@@ -123,7 +123,7 @@ int main() {
   cout << "[Stage 4] Sequentially updating " << TEST_KEY_COUNT << " keys..."
        << endl;
 
-  bench_time = updaterandom(db, write_options, key_value_map, TEST_KEY_COUNT);
+  bench_time = updaterandom(db, write_options, read_options, key_value_map, TEST_KEY_COUNT);
 
   char stage_4_file_name[100] = LOG_FILE_NAME;
   strcat(stage_4_file_name, "-stage_4.log");
