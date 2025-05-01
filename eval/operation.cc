@@ -102,9 +102,11 @@ BenchTime readrandom(leveldb::DB* db, leveldb::ReadOptions& read_options,
 }
 
 BenchTime delrandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
+                    leveldb::ReadOptions& read_options,
                     map<string, string>& key_value_map, int count) {
   BenchTime bench_time;
   leveldb::Status status;
+  vector<string> deleted_keys;
   for (int i = 0; i < count; i++) {
     // Randomly select a key from the hash table
     auto it = key_value_map.begin();
@@ -124,9 +126,23 @@ BenchTime delrandom(leveldb::DB* db, leveldb::WriteOptions& write_options,
     }
     // Remove the key from the hash table
     key_value_map.erase(key);
+    deleted_keys.emplace_back(key);
     if ((i + 1) % 1000 == 0) {
       cout << "Deleted " << (i + 1) << " keys (" << fixed << setprecision(2)
            << (((double)(i + 1) / (double)count) * 100) << "%)" << endl;
+    }
+  }
+  // Check correctness of results
+  cout << "Checking correctness of deleted keys..." << endl;
+  for (const auto& key : deleted_keys) {
+    string value_str;
+    status = (db->Get(read_options, key, &value_str));
+    if (status.ok()) {
+      cerr << "Error: Retrieved value for deleted key." << endl;
+      cerr << "Key: \"" << key << "\"" << endl;
+      cerr << "Retrieved Value: \"" << value_str << "\"" << endl;
+      delete db;
+      exit(1);
     }
   }
   add_db_stats(db, bench_time);
@@ -217,8 +233,8 @@ BenchTime rangequery(leveldb::DB* db, leveldb::ReadOptions& read_options,
     int cnt = 0;
     auto start = chrono::high_resolution_clock::now();
     for (dbit->Seek(key); dbit->Valid() && cnt < 16; dbit->Next()) {
-      keys.push_back(dbit->key().ToString());
-      values.push_back(dbit->value().ToString());
+      keys.emplace_back(dbit->key().ToString());
+      values.emplace_back(dbit->value().ToString());
       cnt++;
     }
     auto end = chrono::high_resolution_clock::now();
