@@ -232,19 +232,13 @@ Iterator* Version::NewConcatenatingIterator(const ReadOptions& options,
 }
 
 void Version::AddIterators(const ReadOptions& options,
-                           std::vector<Iterator*>* iters) {
-  // Merge all level zero files together since they may overlap
-  for (size_t i = 0; i < files_[0].size(); i++) {
-    iters->push_back(vset_->table_cache_->NewIterator(
-        options, files_[0][i]->number, files_[0][i]->file_size));
-  }
-
-  // For levels > 0, we can use a concatenating iterator that sequentially
-  // walks through the non-overlapping files in the level, opening them
-  // lazily.
-  for (int level = 1; level < config::kNumLevels; level++) {
-    if (!files_[level].empty()) {
-      iters->push_back(NewConcatenatingIterator(options, level));
+               std::vector<Iterator*>* iters) {
+  // In tiered compaction, files in any level may overlap like level 0
+  // So we need to create iterators for each individual file in each level
+  for (int level = 0; level < config::kNumLevels; level++) {
+    for (size_t i = 0; i < files_[level].size(); i++) {
+      iters->push_back(vset_->table_cache_->NewIterator(
+        options, files_[level][i]->number, files_[level][i]->file_size));
     }
   }
 }
