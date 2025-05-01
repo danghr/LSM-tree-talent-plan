@@ -12,7 +12,7 @@
 
 using namespace std;
 
-#define INSERT_KEY_COUNT 1000000
+#define INSERT_KEY_COUNT 500000
 #define TEST_KEY_COUNT (INSERT_KEY_COUNT / 10)
 
 #define LOG_FILE_NAME "task1-timing"
@@ -99,7 +99,7 @@ int main() {
   cout << "[Stage 3] Sequentially deleting " << TEST_KEY_COUNT << " keys..."
        << endl;
 
-  bench_time = delrandom(db, write_options, key_value_map, TEST_KEY_COUNT);
+  bench_time = delrandom(db, write_options, read_options, key_value_map, TEST_KEY_COUNT);
 
   char stage_3_file_name[100] = LOG_FILE_NAME;
   strcat(stage_3_file_name, "-stage_3.log");
